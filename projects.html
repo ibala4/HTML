@@ -25,7 +25,7 @@ main{max-width:1100px;margin:0 auto;padding:0 20px 60px}
 .body h3{font-size:1.25rem}.body p{margin:0;color:var(--mute);font-size:.93rem;flex:1}
 .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
 .tag{font-size:.8rem;color:var(--mute)}
-.row .btn{padding:8px 18px}
+.row .btn{padding:8px 18px}.row .btn.ghost{padding:6px 12px;font-size:.85rem;font-weight:600}.row{flex-wrap:wrap;row-gap:8px}.row .btn,.row .del{white-space:nowrap}.row .tag{flex:1 1 100%}.row .btn:last-child{margin-left:auto}
 .del{background:none;border:0;color:var(--mute);text-decoration:underline;font-size:.85rem}
 .viewer{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:10;padding-top:env(safe-area-inset-top,0px)}
 .viewer.on{display:flex}
@@ -49,7 +49,7 @@ input[type=text]{width:100%;padding:10px 12px;border-radius:10px;border:1.5px so
 <main><div class="grid" id="grid"></div></main>
 
 <div class="viewer" id="viewer" role="dialog" aria-label="Project viewer">
-  <div class="bar"><button class="btn ghost" id="back">Back</button><strong id="vt"></strong><button class="btn ghost" id="tab">Open in new tab</button></div>
+  <div class="bar"><button class="btn ghost" id="back">Back</button><strong id="vt"></strong><button class="btn ghost" id="dlv">Download</button><button class="btn ghost" id="tab">Open in new tab</button></div>
   <iframe id="frame" title="Project" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"></iframe>
 </div>
 
@@ -91,14 +91,20 @@ function render(){
     const r=document.createElement('div');r.className='row';
     const o=document.createElement('button');o.className='btn';o.textContent='Open';o.onclick=()=>open(p);
     const tg=document.createElement('span');tg.className='tag';tg.textContent=p.built?'Included':'Uploaded';
-    r.append(tg);
+    const dl=document.createElement('button');dl.className='btn ghost';dl.textContent='\u2B07 Download';dl.setAttribute('aria-label','Download '+p.name);dl.onclick=()=>dlProject(p);
+    r.append(tg,dl);
     {const x=document.createElement('button');x.className='del';x.textContent='Remove';x.onclick=async()=>{if(!askKey('remove'))return;if(!confirm('Remove "'+p.name+'" from this website?'))return;if(p.built){hid.push(p.id);try{localStorage.setItem('hub_hidden',JSON.stringify(hid))}catch(e){}}else{try{await tx('readwrite',s=>s.delete(p.id))}catch(e){}}load()};r.append(x)}
     r.append(o);b.append(h,d,r);c.append(t,b);$('grid').append(c);
   });
 }
+function fname(p){return (p.id||'').endsWith('.html')?p.id:((p.name||'project').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'project')+'.html'}
+async function dlProject(p){const blob=new Blob([p.html],{type:'text/html'}),name=fname(p);
+  try{if(window.claude&&claude.use){const d=await claude.use('downloads');if(d){await d.save({filename:name,data:blob});return}}}catch(e){if(e&&e.code==='declined')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},3000)}
 function open(p){$('vt').textContent=p.name;$('frame').srcdoc=p.html;$('viewer').classList.add('on');$('viewer').dataset.id=p.id;current=p}
 let current;
 $('back').onclick=()=>{$('viewer').classList.remove('on');$('frame').srcdoc=''};
+$('dlv').onclick=()=>current&&dlProject(current);
 $('tab').onclick=()=>{if(blobUrl)URL.revokeObjectURL(blobUrl);blobUrl=URL.createObjectURL(new Blob([current.html],{type:'text/html'}));window.open(blobUrl,'_blank')};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('viewer').classList.contains('on'))$('back').click()});
 
