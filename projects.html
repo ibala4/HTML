@@ -41,10 +41,22 @@ input[type=text]{width:100%;padding:10px 12px;border-radius:10px;border:1.5px so
 .drop.has{border-color:var(--acc);color:var(--ink)}
 .err{color:#d33;font-size:.9rem;min-height:1.3em;margin:8px 0 0}
 .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
-</style></head><body>
+#lock{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:var(--bg);padding:20px}
+body.locked #lock{display:grid}body.locked header,body.locked main,body.locked .viewer{display:none!important}
+#lbox{width:min(360px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 24px;text-align:center}
+#lbox .lic{font-size:2.6rem;line-height:1}#lbox h2{font-size:1.6rem;margin:8px 0 4px}#lbox p{margin:0 0 16px;color:var(--mute)}
+#lbox input[type=password]{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:1.2rem;text-align:center;letter-spacing:.3em}
+#lbox .rem{display:flex;gap:8px;justify-content:center;align-items:center;font-weight:500;color:var(--mute);margin:12px 0 0}
+#lbox p.err{color:#d33;font-size:.9rem;min-height:1.4em;margin:8px 0 6px}#lgo{width:100%}#lgo:disabled{opacity:.5}
+.shake{animation:sk .4s}@keyframes sk{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@media(prefers-reduced-motion:reduce){.shake{animation:none}}
+</style></head><body class="locked">
+<script>try{if(sessionStorage.getItem('hub_ok')==='1'||localStorage.getItem('hub_ok')==='1')document.body.classList.remove('locked')}catch(e){}</script>
+<div id="lock"><div id="lbox"><div class="lic">🔒</div><h2>Welcome back</h2><p>Enter your secret key to open My Projects.</p><input type="password" id="lk" inputmode="numeric" autocomplete="off" placeholder="Secret key" aria-label="Secret key"><label class="rem"><input type="checkbox" id="lrem"> Remember me on this device</label><p class="err" id="lerr" role="alert"></p><button class="btn" id="lgo">Unlock</button></div></div>
+
 <header>
   <div><h1>My projects</h1><p>Every app you've built, in one place. Open one to use it, or add a new one by uploading its HTML file.</p></div>
-  <button class="btn" id="add">Add project</button>
+  <div style="display:flex;gap:8px"><button class="btn ghost" id="lockbtn">🔒 Lock</button><button class="btn" id="add">Add project</button></div>
 </header>
 <main><div class="grid" id="grid"></div></main>
 
@@ -129,4 +141,16 @@ $('save').onclick=async()=>{
   $('dlg').close();load();
 };
 load();
+</script>
+<script>
+(function(){const KH=3495098356692312,b=document.body,$=id=>document.getElementById(id);let fails=0;
+ function unlock(rem){try{(rem?localStorage:sessionStorage).setItem('hub_ok','1')}catch(e){}b.classList.remove('locked')}
+ function lock(){try{sessionStorage.removeItem('hub_ok');localStorage.removeItem('hub_ok')}catch(e){}$('viewer').classList.remove('on');$('frame').srcdoc='';b.classList.add('locked');$('lk').value='';$('lerr').textContent='';setTimeout(()=>$('lk').focus(),50)}
+ function tryk(){if($('lgo').disabled)return;const k=$('lk').value.trim();
+  if(h53(k)===KH){fails=0;$('lerr').textContent='';$('lk').value='';unlock($('lrem').checked)}
+  else{fails++;$('lerr').textContent=fails>=5?'Too many wrong tries. Wait 30 seconds.':'Wrong key. Try again.';const bx=$('lbox');bx.classList.remove('shake');void bx.offsetWidth;bx.classList.add('shake');$('lk').select();
+   if(fails>=5){fails=0;$('lgo').disabled=true;setTimeout(()=>{$('lgo').disabled=false;$('lerr').textContent=''},30000)}}}
+ $('lgo').onclick=tryk;$('lk').onkeydown=e=>{if(e.key==='Enter')tryk()};$('lockbtn').onclick=lock;
+ if(b.classList.contains('locked'))setTimeout(()=>$('lk').focus(),50)
+})();
 </script></body></html>
